@@ -1,0 +1,196 @@
+
+
+-------------------------------------> Lets start with Django Rest Framework <------------------------------------
+
+
+Ques.1 What is serialization in DRF?
+
+Ans.1 THe process of converting data such as querysets and model instances to native python datatype are called 
+        serialization in DRF.
+
+                ------------> Starting with installing DjangoRestFrameWork(DRF) <--------------
+
+    ------> pip install djangorestframework
+
+------------------------------------------------------------------------------------------------------------------
+
+
+            --------------------------> gs1 Django Serializer <----------------------------
+
+    Python json: Python has a built in package called json,which is useed to work with json data.
+
+            dumps(data):This is used to convert object into json string.
+
+                        import json
+                        python_data = {'name':'harsh'.'roll':101}
+                        json_data = json.dumps(python_data)
+                        print(json_data)        ----------> {"name":"harsh","roll":101}
+
+            loads(data): This is used to parse json string.
+
+                        import json
+                        json_data = {"name":"harsh","roll":101}
+                        parsed_data = json.loads(json_data)
+                        print(parsed_data)          ------------> {'name':'harsh'.'roll':101}
+
+    
+    Serializers: In Django, serializers are a crucial component for converting complex data types, such as Django 
+                 model instances or querysets, into native Python data types(called serialization). They also 
+                 facilitate the process of converting native Python data types back into complex data types. 
+                 Serializers play a significant role in handling the conversion of data to and from formats 
+                 like JSON for frontend.
+
+                Serializer are also responsible for deserialization which means it allows parsed data to be converted
+                back into complex types,after first validating the incoming data.
+
+            --------------------> TO do serialization we use Serializer Class <-------------------
+
+    A Serializer Class is very similar to a django Form and Model form class, and includes similar validation flags
+    on the various fields, such as required,max_length and default.
+
+    Drf provides a Serializer class which gives you a powerful,generic way to control the output of your responses,
+    as well as a ModelSerializer Class which provides a useful shortcut for creating that deal with model instances
+    and querysets.
+
+-------------------> Approach
+
+    Create a seperat serializers.py file to write all serializers
+
+            from rest_framework import serializers
+
+            class StudentSerializers(serializers.Serializer):
+                name = serializers.Charfield(max_length=100)
+                roll = serializers.IntegerField()
+                city = serializers.Charfield(max_length=100)
+
+    serializer.data:
+        This is serialized data. to check what is in serializer.
+
+    JSONRenderer:
+        This is used to render data into JSON which is understandable by Front-end.
+
+        from rest_framework.renders import JSONRenderer
+
+        json_data = JSONRenderer().render(serializer.data)
+
+
+-------------------------
+
+        (Model Objects)-----------serialization----------->(Python Dict)---------Render into Json-----> (Json Data)
+        complex data types                           Python native Data  type                          
+
+-------------------------
+
+    JsonResponse():
+        JsonResponse(data,encode=DjangoJSONEncoder,safe = True,json_dumps_params = None,**kwargs)
+
+        An httpResponse subclass that helps to create a JSON-encoded response.it inherits most behaviour from its
+        superclass a couple differences.
+
+
+
+           ---------------------------------> Practical Approach <---------------------------------------------
+
+
+    Create project, then create app, register app and rest_framework.....
+
+Step1:          INSTALLED_APPS = [
+                    'django.contrib.admin',
+                    'django.contrib.auth',
+                    'django.contrib.contenttypes',
+                    'django.contrib.sessions',
+                    'django.contrib.messages',
+                    'django.contrib.staticfiles',
+                    'rest_framework',
+                    'api',
+                ]
+
+Step2:   Create models.py
+            from django.db import models
+
+            # Create your models here.
+            class Student(models.Model):
+                name = models.CharField(max_length=50)
+                roll = models.IntegerField()
+                city = models.CharField(max_length=50)
+
+                def __str__(self):
+                    return self.name
+
+step3:  create Serializers.py
+            from rest_framework import serializers
+
+            class StudentSerializers(serializers.Serializer):
+                name = serializers.CharField(max_length=50)
+                roll = serializers.IntegerField()
+                city = serializers.CharField(max_length=50)
+
+step4:  Create Views.py
+
+        from django.shortcuts import render,HttpResponse
+        from .models import Student
+        from .serializers import StudentSerializers
+        from rest_framework.renderers import JSONRenderer
+
+
+        # Create your views here.
+        def student_details(request):
+            stu = Student.objects.get(id=3)         #specifying which objects data we want?
+            serializer = StudentSerializers(stu)        #here we serialized our data----> complex data to python native datatype
+            print(serializer)
+            json_data = JSONRenderer().render(serializer.data)      #rendering our python native datatype to jsondata.
+            return HttpResponse(json_data,content_type = 'application/json')
+
+-------------------> Quesryset
+
+
+        def student_details(request):
+            stu = Student.objects.all()         #specifying which objects data we want?
+            serializer = StudentSerializers(stu,many = True)        #here we use all students data so we have to make many = True
+            print(serializer)
+            json_data = JSONRenderer().render(serializer.data)      #rendering our python native datatype to jsondata.
+            return HttpResponse(json_data,content_type = 'application/json')
+
+
+--------------------------------------------> Api Use Example
+
+        here we create a new file. 
+
+        myapp.py
+
+            import requests
+
+            URL = 'http://127.0.0.1:8000/stuinfo/'
+
+            r = requests.get(url = URL)
+
+            data = r.json()
+            print(data,end='')
+
+            output - [{'name': 'Harsh', 'roll': 101, 'city': 'lucknow'}, 
+                      {'name': 'Rahul', 'roll': 102, 'city': 'kanpur'}, 
+                      {'name': 'Ashish Bajpai', 'roll': 103, 'city': 'barabanki'}]
+
+
+---------------------------> Use of JsonResponse
+
+    By this we can reduce line of code, in this we dont need to render data.
+
+    def student_details(request):
+        stu = Student.objects.all()         #specifying which objects data we want?
+        serializer = StudentSerializers(stu,many = True)        #here we use all students data so we have to make many = True
+        print(serializer)
+        # json_data = JSONRenderer().render(serializer.data)      #rendering our python native datatype to jsondata.
+        # return HttpResponse(json_data,content_type = 'application/json')
+        return JsonResponse(serializer.data,safe=False)
+
+
+-------------> If you want to see id in json data you have explicitly define that in serializers.py
+
+                from rest_framework import serializers
+
+                class StudentSerializers(serializers.Serializer):
+                    id = serializers.IntegerField()
+                    name = serializers.CharField(max_length=50)
+                    roll = serializers.IntegerField()
+                    city = serializers.CharField(max_length=50)
