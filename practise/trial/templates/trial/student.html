@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Showing data through Api</h1>
+    {{student_data}}
+    <hr>
+    <table border = '2px dashed'>
+        <tr>
+            <td>Name</td>
+            <td>Roll</td>
+            <td>subject</td>
+        </tr>
+        {% for student in student_data%}
+        <tr><td>{{student.name}} </td>
+            <td>{{student.roll_no}}</td>
+                <td>{{student.subject}}</td>
+            </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
