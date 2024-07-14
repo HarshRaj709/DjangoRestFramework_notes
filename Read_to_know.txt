@@ -19,7 +19,7 @@ Ans.1 THe process of converting data such as querysets and model instances to na
 
     Python json: Python has a built in package called json,which is used to work with json data.
 
-            dumps(data):This is used to convert object into json string.
+            dumps(data):This is used to convert python dictionary into json string.
 
                         import json
                         python_data = {'name':'harsh'.'roll':101}
@@ -69,7 +69,7 @@ Ans.1 THe process of converting data such as querysets and model instances to na
     JSONRenderer:
         This is used to render data into JSON which is understandable by Front-end.
 
-        from rest_framework.renders import JSONRenderer
+        from rest_framework.renderers import JSONRenderer
 
         json_data = JSONRenderer().render(serializer.data)
 
@@ -329,7 +329,7 @@ step4:  Create Views.py
 
 -------------------------------------------------------------------------------------------------------------------
 
-                ----------------------> gs3 API Crud Application <-----------------------
+                ----------------------> ev3 API Crud Application <-----------------------
 
 1.  Update Data: 
 
@@ -363,6 +363,13 @@ step4:  Create Views.py
 
 
 ---------------------------------------------> Practical Approach <---------------------------------------------
+
+
+        How to run this Project (ev3) first run all migration command and create super user.
+        THen open terminal and run server.
+        Open another terminal run app.py ....
+
+        <img src = 'ss.png'>
 
                                 ------------> Only to Access data <---------------
 -----> models.py
