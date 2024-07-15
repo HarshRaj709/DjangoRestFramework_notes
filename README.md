@@ -368,8 +368,12 @@ step4:  Create Views.py
         How to run this Project (ev3) first run all migration command and create super user.
         THen open terminal and run server.
         Open another terminal run app.py ....
-
-        <img src = 'ss.png'>
+<html>
+        <body>
+        <img src = 'https://github.com/HarshRaj709/DjangoRestFramework_notes/blob/main/ss.png' width = '100%', height='50%' >
+        </body>
+</html>
+      
 
                                 ------------> Only to Access data <---------------
 -----> models.py
@@ -573,3 +577,70 @@ step4:  Create Views.py
                     print(data)
 
                 delete_data()
+
+
+---------------------------------------------------------------------------------------------------------------
+
+                    --------------------->ev4: Validation / Validators <------------------------
+        
+    There are two ways to apply Validation.
+1. Field Level Validation       : single Field validation multiple field validation.
+2. Object Level Validation      : Multiple Field validation
+
+
+1.Field Level Validation:
+    Used to add custom Field Validation.
+    Same as clean_fieldName methods on Django forms.
+    validate_fieldName methods should return the validated value or raise a serializers.ValidaionError
+
+        Syntax:
+                def validate_fieldname(self,value):     # in forms validation we only need to pass: def clean_fieldname(self)
+        
+        where value is the field that requires validation.
+
+Exmaple:
+        from rest_framework import serializers
+        class Student(serializers.Serializer):
+            name = serializers.CharField(max_length=50)
+            roll = serializers.IntegerField()
+            city = serializers.CharField(max_length=50)
+
+            def validate_roll(self,value):      #value in this scenario have roll
+                if value >= 200:
+                    raise serializers.ValidaionError('Seat full')           # in Djangoforms we raise forms.ValidaionError('message')
+                return roll
+
+            def validate_name(self,value):      #check name already exist or not
+                if Student.objects.filter(name = value):
+                    raise serializers.ValidationError('name already used')
+                return value
+    
+    THis method is automatically invoked when is_valid(): method is called same as forms.is_valid():
+
+2. Object Level Validation
+    In this we use validate() to validate objects.
+
+        Syntax: def validate(self,data):
+            where data is a dictionary of field values.
+
+    Example:
+        def validate(self,data):
+            name = data.get('name')     #as data is dictionary
+            city = data.get('city')
+            if name.lower() == 'rohit' and city.lower != 'ranchi'
+                raise serializers.ValidaionError('city must be Ranchi')
+            return data
+
+3. Validators
+    This is used make our validation method reusable.
+    declaring at single place and can use to multiple places.
+
+        def start_with_r(value):        #before class declaration
+            if value[0].lower() != 'r':
+                raise serializers.ValidationError('name should start with r')
+            
+
+        class Studentserializers(serializers.Serializer):
+            name = serializers.CharField(max_length=100,validators = [start_with_r])
+            roll = serializers.IntegerField()
+            city = serializers.CharField(max_length=50)
