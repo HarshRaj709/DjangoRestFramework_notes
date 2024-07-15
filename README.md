@@ -586,7 +586,7 @@ step4:  Create Views.py
     There are two ways to apply Validation.
 1. Field Level Validation       : single Field validation multiple field validation.
 2. Object Level Validation      : Multiple Field validation
-
+3. Validators                   : Reusable validation function
 
 1.Field Level Validation:
     Used to add custom Field Validation.
