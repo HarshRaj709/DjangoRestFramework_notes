@@ -627,7 +627,7 @@ Exmaple:
         def validate(self,data):
             name = data.get('name')     #as data is dictionary
             city = data.get('city')
-            if name.lower() == 'rohit' and city.lower != 'ranchi'
+            if name.lower() == 'rohit' and city.lower != 'ranchi':
                 raise serializers.ValidaionError('city must be Ranchi')
             return data
 
@@ -644,3 +644,100 @@ Exmaple:
             name = serializers.CharField(max_length=100,validators = [start_with_r])
             roll = serializers.IntegerField()
             city = serializers.CharField(max_length=50)
+
+---------------------------------------------------------------------------------------------------------------
+
+                ----------------------> ev5 Modelserializer Class <----------------------
+
+    same as ModelForm.
+
+    ModelSerializer class provide a shortcut that lets you automatically create a serializer class with fields
+    that corresponds to the Model Fields.
+    The ModelSerializer class is the same as regular Serializer class except that:
+        -> It will automatically genereate a set of fields for you, based on the model.
+        -> It will automatically generate validators for the serializer, such as unique_together validators.
+        -> It includes simple default implementations of create() and update().
+
+    Syntax:
+        from rest_framework import serializers
+        from .model import Student
+
+        Class StudentSerializer(serializer.ModelSerializer):
+            class Meta:
+                model = Student
+                fields = ['id','name','roll','city']    # '__all__'
+                #exclude = ['roll']
+
+
+                            ---------------> Add validations: <-----------------
+Type 1:
+        from .models import Student
+        from rest_framework import serializers
+
+        class StudentSerializers(serializers.ModelSerializer):
+            name = serializers.CharField(read_only = True)      #make name field read only
+            class Meta:
+                model = Student
+                fields = '__all__'
+
+            #get all create, update methods in-built
+
+Type 2:
+        from .models import Student
+        from rest_framework import serializers
+
+        class StudentSerializers(serializers.ModelSerializer):
+            class Meta:
+                model = Student
+                fields = '__all__'
+                read_only_fields = ['id','roll']        #'__all__' not working here
+
+            #get all create, update methods in-built
+
+Type 3:
+        from .models import Student
+        from rest_framework import serializers
+
+        class StudentSerializers(serializers.ModelSerializer):
+            class Meta:
+                model = Student
+                fields = '__all__'
+                extra_kwargs = {'name':{'read_only':True}}
+
+    
+                -----------------------> Field Validation <-----------------------
+
+    Same as before 
+
+    from .models import Student
+    from rest_framework import serializers
+
+    class StudentSerializers(serializers.ModelSerializer):
+        class Meta:
+            model = Student
+            fields = '__all__'
+
+        def validate(self,data):    
+            name = data.get('name')
+            city = data.get('city')
+            if name.lower() == 'harsh' and city.lower() == 'kolkate':
+                raise serializers.ValidationError('roll no. must be 100')
+            return data 
+
+---------------------------------------------------------------------------------------------------------------
+
+
+                    ----------------> Ev6 Function Based Api View <---------------
+        
+    It will help us to make our code more short and quick to create api's.
+
+    from rest_framework.decorators import api_view
+    from rest_framework.response import Response
+
+    @api_view(['GET'])
+    def Student_list(request):
+        if request.method == 'GET':
+            stu = Student.objects.all()
+            serializer = StudentSerializer(stu,many = True)
+            return Response(serializer.data)
+            
