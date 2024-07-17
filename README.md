@@ -740,4 +740,10 @@ Type 3:
             stu = Student.objects.all()
             serializer = StudentSerializer(stu,many = True)
             return Response(serializer.data)
-            
+    
+
+---------------------------------------------------------------------------------------------------------------
+
+                --------------> ev7 CRUD OPERATION usin view_api <---------------------
+
+    
