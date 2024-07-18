@@ -746,4 +746,175 @@ Type 3:
 
                 --------------> ev7 CRUD OPERATION usin view_api <---------------------
 
+    from rest_framework.response import Response
+    from rest_framework.decorators import api_view
+    from .models import Student
+    from .serializers import Studentserializers
+
+
+    # Create your views here.
+    @api_view(['GET','POST','PUT','PATCH','DELETE'])
+    def home(request,pk=None):
+        if request.method == 'GET':
+            id = pk           #request.data.get('id')
+            if id:
+                stu = Student.objects.get(pk=id)
+                serialize = Studentserializers(stu)
+                return Response(serialize.data)
+            else: 
+                stu = Student.objects.all()
+                serialize = Studentserializers(stu,many=True)
+                return Response(serialize.data)
+        
+        if request.method == 'POST':
+            serialize = Studentserializers(data = request.data)
+            if serialize.is_valid():
+                serialize.save()
+                return Response({'msg':'data created successfully','data':serialize.data})
+            return Response(serialize.errors)
+        
+        if request.method == 'PUT':
+            id =    pk
+            stu = Student.objects.get(pk=id)
+            serialize = Studentserializers(stu,data = request.data)
+            if serialize.is_valid():
+                serialize.save()
+                return Response(serialize.data)
+            return Response(serialize.errors)
+        
+
+        if request.method == 'PATCH':
+            id =pk
+            stu = Student.objects.get(pk=id)
+            serialize = Studentserializers(stu,data = request.data, partial=True)
+            if serialize.is_valid():
+                serialize.save()
+                return Response({'msg':'partial data updated'})
+            return Response(serialize.errors)
+            
+        if request.method == 'DELETE':
+            id = pk
+            stu = Student.objects.get(pk=id)
+            stu.delete()
+            return Response({'msg':f"id {id} is deleted "})
+        
+---------------------------------------------------------------------------------------------------------------
+
+                    -------------------> ev8 Class based Api View <---------------------
+
     
+    from django.shortcuts import render
+    # from rest_framework.decorators import api_view
+    from rest_framework.views import APIView
+    from rest_framework.response import Response
+    from .models import Student
+    from .serializers import StudentSerializers
+    from rest_framework import status
+
+    # Create your views here.
+    class Studentviews(APIView):
+        def get(self,request,format =None,pk=None):
+            id = pk
+            if id is not None:
+                stu = Student.objects.get(pk=id)
+                serialized = StudentSerializers(stu)
+                return Response(serialized.data)
+            stu = Student.objects.all()
+            serialized = StudentSerializers(stu,many=True)
+            return Response(serialized.data)
+        
+        def post(self,request,format=None):
+            serialized = StudentSerializers(data=request.data)
+            if serialized.is_valid():
+                serialized.save()
+                res = {'msg':'Data entered successfully'}
+                return Response(res,status=status.HTTP_201_CREATED)
+            return Response(serialized.errors,status=status.HTTP_400_BAD_REQUEST)
+        
+        def put(self,request,pk,format=None):
+            id = pk
+            stu = Student.objects.get(pk=id)
+            serialized = StudentSerializers(stu,data = request.data)
+            if serialized.is_valid():
+                serialized.save()
+                res={'msg':'data manipulated'}
+                return Response(serialized.data,status=status.HTTP_205_RESET_CONTENT)
+            return Response(serialized.errors,status=status.HTTP_400_BAD_REQUEST)
+        
+        def patch(self,request,pk,format=None):
+            id = pk
+            stu = Student.objects.get(pk=id)
+            serialized = StudentSerializers(stu,data=request.data,partial=True)
+            if serialized.is_valid():
+                serialized.save()
+                return Response(serialized.data,status=status.HTTP_206_PARTIAL_CONTENT)
+            return Response(serialized.errors,status=status.HTTP_400_BAD_REQUEST)
+        
+        def delete(self,request,pk,format=None):
+            id = pk
+            stu = Student.objects.get(pk=id)
+            stu.delete()
+            res = {'msg':'Deleted'}
+            return Response(res)
+
+
+---------------------------------------------------------------------------------------------------------------
+
+                    --------------------> ev9 GenericApiView <-------------------
+
+    This class extends Rest framework's APIView class,adding commonly required behaviour for standard list and detail views.
+
+    Attributes:
+
+        Here are some of the key attributes you can set on Generic API views:
+
+    1.queryset:
+            This attribute defines the base QuerySet that the view will operate on. It's required and should be set to the queryset you want to use for the view.
+
+            queryset = Article.objects.all()
+
+
+    2.serializer_class:
+            This attribute defines the serializer class that should be used to validate and deserialize input, and to serialize output.
+
+            serializer_class = ArticleSerializer
+
+    3.lookup_field:
+            This attribute sets the field to be used to look up individual model instances. By default, it's set to 'pk', but you can change it if you use a different field.
+
+            lookup_field = 'id'
+
+    4.permission_classes:
+            This attribute specifies the list of permission classes that the view should use to determine access control.
+
+            from rest_framework.permissions import IsAuthenticated
+            permission_classes = [IsAuthenticated]
+
+    5.authentication_classes:
+            This attribute specifies the list of authentication classes that the view should use to authenticate the requests.
+
+            from rest_framework.authentication import TokenAuthentication
+            authentication_classes = [TokenAuthentication]
+
+    6.pagination_class:
+            This attribute sets the pagination class to be used for paginating the queryset.
+
+            from rest_framework.pagination import PageNumberPagination
+            class CustomPagination(PageNumberPagination):
+                page_size = 10
+                pagination_class = CustomPagination
+
+    7.filter_backends:
+            This attribute sets the list of filter backends that will be used to filter the queryset.
+
+            from rest_framework import filters
+
+            filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+            search_fields = ['title', 'author']
+            ordering_fields = ['created_at', 'title']
+
+    8.throttle_classes:
+            This attribute sets the list of throttle classes that will be used to throttle the requests.
+
+            from rest_framework.throttling import UserRateThrottle
+            throttle_classes = [UserRateThrottle] 
