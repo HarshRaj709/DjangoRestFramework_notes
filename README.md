@@ -918,3 +918,154 @@ Type 3:
 
             from rest_framework.throttling import UserRateThrottle
             throttle_classes = [UserRateThrottle] 
+
+
+Methods in Generic View:
+
+    In Django REST Framework (DRF), the GenericAPIView class provides several methods that you can override or customize to control the behavior of the view. Here are the main methods and their typical use cases:
+
+    1.get_queryset(self):
+
+            Returns the queryset that should be used for retrieving objects for this view.
+            Typically, this is overridden to customize the queryset based on request parameters or other logic.
+            
+            def get_queryset(self):
+                return Article.objects.filter(author=self.request.user)
+
+    2.get_serializer_class(self):
+
+            Returns the serializer class that should be used for validating and deserializing input, and for serializing output.
+            You can override this to return different serializers based on the request.
+        
+            def get_serializer_class(self):
+                if self.action == 'list':
+                    return ArticleListSerializer
+                return ArticleDetailSerializer
+            
+    3.get_serializer(self, *args, **kwargs):
+
+            Returns the serializer instance that should be used for validating and deserializing input, and for serializing output.
+            This can be customized to pass additional context to the serializer.
+
+            def get_serializer(self, *args, **kwargs):
+                kwargs['context'] = self.get_serializer_context()
+                return self.get_serializer_class()(*args, **kwargs)
+
+    4.get_object(self):
+
+            Retrieves the object to be operated on for detail views.
+            This can be overridden to apply custom object retrieval logic.
+
+            def get_object(self):
+                obj = super().get_object()
+                if obj.author != self.request.user:
+                    raise PermissionDenied("You do not have permission to access this object")
+                return obj
+
+    5.filter_queryset(self, queryset):
+
+            Filters the initial queryset based on request parameters.
+            Typically, you use this to apply custom filtering logic.
+
+            def filter_queryset(self, queryset):
+                author = self.request.query_params.get('author')
+                if author:
+                    queryset = queryset.filter(author=author)
+                return queryset
+
+    6.paginate_queryset(self, queryset):
+
+            Paginates the queryset if pagination is enabled.
+            This method is typically used as-is, but you can override it to customize pagination behavior.
+
+            def paginate_queryset(self, queryset):
+                page = self.request.query_params.get('page', 1)
+                paginator = Paginator(queryset, 10)  # 10 items per page
+                return paginator.page(page)
+
+    7.get_paginated_response(self, data):
+
+            Returns a paginated response with the given serialized data.
+            You can override this to customize the pagination response format.
+    
+            def get_paginated_response(self, data):
+                return Response({
+                    'total': self.paginator.count,
+                    'page': self.paginator.page,
+                    'results': data
+                })
+
+
+Mixin in GenericApiView
+
+    List of Available Mixins
+        1.ListModelMixin: Provides the list action to retrieve multiple instances of a model.
+                from rest_framework.mixins import ListModelMixin
+
+        2.CreateModelMixin: Provides the create action to create a new instance of a model.
+                from rest_framework.mixins import CreateModelMixin
+
+        3.RetrieveModelMixin: Provides the retrieve action to get a single instance of a model.
+                from rest_framework.mixins import RetrieveModelMixin
+
+        4.UpdateModelMixin: Provides the update action to update an existing instance of a model.
+                from rest_framework.mixins import UpdateModelMixin
+
+        5.DestroyModelMixin: Provides the destroy action to delete an existing instance of a model.
+                from rest_framework.mixins import DestroyModelMixin
+
+        6.CreateModelMixin: Provides the create action to create a new instance of a model.
+                from rest_framework.mixins import CreateModelMixin
+
+
+------------------------------> Practical Approach
+
+        from rest_framework import mixins,generics
+        from .models import Student
+        from .serializer import StudentSerializer
+
+        # Create your views here.
+        class Studentget(mixins.ListModelMixin,mixins.CreateModelMixin,generics.GenericAPIView):
+
+            queryset=Student.objects.all()
+            serializer_class = StudentSerializer
+
+            def get(self,request,*args,**kwargs):
+                return self.list(request,*args,**kwargs)
+            
+            def post(self,request,*args,**kwargs):
+                return self.create(request,*args,**kwargs)
+            
+            
+        class StudentRetrieve(mixins.RetrieveModelMixin,generics.GenericAPIView):
+            queryset=Student.objects.all()
+            serializer_class = StudentSerializer
+
+            def get(self,request,pk,*args,**kwargs):                #retieve ke through 1 dataset ko dekh sakte h.
+                return self.retrieve(request,*args,**kwargs)
+            
+        class StudentUpdate(mixins.RetrieveModelMixin,mixins.UpdateModelMixin,generics.GenericAPIView):
+            queryset = Student.objects.all()
+            serializer_class = StudentSerializer
+
+            def get(self,request,pk,*args,**kwargs):
+                return self.retrieve(request,*args,**kwargs)
+
+            def put(self,request,pk,*args,**kwargs):            #it works for both partial adn complete update of dataset
+                return self.update(request,*args,**kwargs)
+            
+        class Studentdelete(mixins.DestroyModelMixin,mixins.RetrieveModelMixin,generics.GenericAPIView):
+
+            queryset = Student.objects.all()
+            serializer_class = StudentSerializer
+
+            def get(self,request,pk,*args,**kwargs):
+                return self.retrieve(request,*args,**kwargs)
+
+            def delete(self,request,*args,**kwargs):
+                return self.destroy(request,*args,**kwargs)
+
+
+                
+
+        ------------------------> ev10 Combined all mixins in single class <----------------------
