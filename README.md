@@ -1104,4 +1104,135 @@ Mixin in GenericApiView
             return self.destroy(request,*args,**kwargs)
 
 
+--------------------------------------------------------------------------------------------------------------
+
+            ------------------------> ev11 Concrete View Class <--------------------
+
     
+    1. ListAPIView
+        Provides a read-only endpoint to list a collection of objects.
+
+        Example:
+            from rest_framework import generics
+            from .models import Book
+            from .serializers import BookSerializer
+
+            class BookListView(generics.ListAPIView):
+                queryset = Book.objects.all()
+                serializer_class = BookSerializer
+
+    2. CreateAPIView
+        Provides a write-only endpoint to create a new object.
+
+        Example:
+
+            from rest_framework import generics
+            from .models import Book
+            from .serializers import BookSerializer
+
+            class BookCreateView(generics.CreateAPIView):
+                queryset = Book.objects.all()
+                serializer_class = BookSerializer
+
+    3. RetrieveAPIView
+        Provides a read-only endpoint to retrieve a single object.
+
+        Example:
+
+            from rest_framework import generics
+            from .models import Book
+            from .serializers import BookSerializer
+
+            class BookDetailView(generics.RetrieveAPIView):
+                queryset = Book.objects.all()
+                serializer_class = BookSerializer
+
+    4. UpdateAPIView
+        Provides endpoints to update an existing object with PUT and PATCH methods.
+
+        Example:
+
+            from rest_framework import generics
+            from .models import Book
+            from .serializers import BookSerializer
+
+            class BookUpdateView(generics.UpdateAPIView):
+                queryset = Book.objects.all()
+                serializer_class = BookSerializer
+
+    5. DestroyAPIView
+        Provides a delete-only endpoint to delete a single object.
+
+        Example:
+
+            from rest_framework import generics
+            from .models import Book
+            from .serializers import BookSerializer
+
+            class BookDeleteView(generics.DestroyAPIView):
+                queryset = Book.objects.all()
+                serializer_class = BookSerializer
+
+    6. ListCreateAPIView
+        Provides endpoints to list a collection of objects and create a new object.
+
+        Example:
+
+            from rest_framework import generics
+            from .models import Book
+            from .serializers import BookSerializer
+
+            class BookListCreateView(generics.ListCreateAPIView):
+                queryset = Book.objects.all()
+                serializer_class = BookSerializer
+
+    7. RetrieveUpdateAPIView
+        Provides endpoints to retrieve and update an existing object with GET, PUT, and PATCH methods.
+
+        Example:
+
+            from rest_framework import generics
+            from .models import Book
+            from .serializers import BookSerializer
+
+            class BookRetrieveUpdateView(generics.RetrieveUpdateAPIView):
+                queryset = Book.objects.all()
+                serializer_class = BookSerializer
+
+    8. RetrieveDestroyAPIView
+        Provides endpoints to retrieve and delete an existing object with GET and DELETE methods.
+
+        Example:
+
+            from rest_framework import generics
+            from .models import Book
+            from .serializers import BookSerializer
+
+            class BookRetrieveDestroyView(generics.RetrieveDestroyAPIView):
+                queryset = Book.objects.all()
+                serializer_class = BookSerializer
+
+    9. RetrieveUpdateDestroyAPIView
+        Provides endpoints to retrieve, update, and delete an existing object with GET, PUT, PATCH, and DELETE methods.
+
+        Example:
+
+            from rest_framework import generics
+            from .models import Book
+            from .serializers import BookSerializer
+
+            class BookRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+                queryset = Book.objects.all()
+                serializer_class = BookSerializer
+Summary
+
+        1.ListAPIView: Read-only list of objects.
+        2.CreateAPIView: Write-only creation of a new object.
+        3.RetrieveAPIView: Read-only retrieval of a single object.
+        4.UpdateAPIView: Update an existing object.
+        5.DestroyAPIView: Delete an existing object.
+--------------
+        6.ListCreateAPIView: Combination of list and create operations.
+        7.RetrieveUpdateAPIView: Combination of retrieve and update operations.
+        8.RetrieveDestroyAPIView: Combination of retrieve and delete operations.
+        9.RetrieveUpdateDestroyAPIView: Combination of retrieve, update, and delete operations.
