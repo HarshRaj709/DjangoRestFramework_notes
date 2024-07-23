@@ -1107,7 +1107,9 @@ Mixin in GenericApiView
 --------------------------------------------------------------------------------------------------------------
 
             ------------------------> ev11 Concrete View Class <--------------------
-
+    from rest_framework.generics import ListAPIView,CreateAPIView,RetrieveAPIView,UpdateAPIView,DestroyAPIView,ListCreateAPIView,RetrieveUpdateAPIView,RetrieveUpdateDestroyAPIView
+    from .models import Student
+    from .serializer import StudentSerializer
     
     1. ListAPIView
         Provides a read-only endpoint to list a collection of objects.
@@ -1236,3 +1238,142 @@ Summary
         7.RetrieveUpdateAPIView: Combination of retrieve and update operations.
         8.RetrieveDestroyAPIView: Combination of retrieve and delete operations.
         9.RetrieveUpdateDestroyAPIView: Combination of retrieve, update, and delete operations.
+
+--------------------------------------------------------------------------------------------------------------
+
+            ------------------------> ev12 ViewSet in DRF <--------------------------
+
+    In Django REST Framework (DRF), a ViewSet is a class that provides the logic for a set of related views. It combines the logic for handling multiple types of HTTP requests (such as GET, POST, PUT, DELETE) into a single class, making it easier to manage and organize your API views. This is different from the traditional approach where each view function or class handles a single type of HTTP request.
+
+Key Concepts of ViewSets
+    1.Centralized Logic: Instead of writing separate views for different actions like listing objects, retrieving a single object, creating, updating, or deleting objects, a ViewSet consolidates all these actions into a single class.
+
+    2.Automatic Routing: When combined with DRF's routers, ViewSets automatically generate the URL patterns for the various actions they support. This significantly reduces boilerplate code and simplifies URL configuration.
+
+    3.Action Methods: ViewSets come with predefined methods corresponding to the common actions performed in a RESTful API:
+
+    list(): To list all objects.
+    retrieve(): To get a single object.
+    create(): To create a new object.
+    update(): To update an existing object.
+    partial_update(): To partially update an existing object.
+    destroy(): To delete an object.
+
+    ------------------------------------------->>>>>>>>>>>>>>>>>>>>>>>--------------------------------------
+
+    from .models import Student
+    from .serializer import StudentSerializer
+    from rest_framework import viewsets
+    from rest_framework.response import Response
+
+    class StudentViewset(viewsets.ViewSet):
+        def list(self,request):                     #it will automatically take Get,POST,PUT,PATCH,DELETE requests
+            
+            stu = Student.objects.all()
+            serialize = StudentSerializer(stu,many=True)
+            return Response(serialize.data)
+        
+        def retrieve(self,request,pk=None):
+            id = pk
+            if id:
+                stu = Student.objects.get(pk=id)
+                serialize = StudentSerializer(stu)
+                return Response(serialize.data)
+        
+        def create(self,request):
+            serialize = StudentSerializer(data=request.data)     #here data is dictionary
+            if serialize.is_valid():
+                serialize.save()
+                return Response({'msg':'Data created successfully'})
+            return Response(serialize.errors)
+
+        def update(self,request,pk):
+            id=pk
+            stu=Student.objects.get(pk=id)
+            serialize = StudentSerializer(stu,data=request.data)
+            if serialize.is_valid():
+                serialize.save()
+                return Response({'data updated'})
+            return Response(serialize.errors)
+
+        def partial_update(self,request,pk):
+            id=pk
+            stu = Student.objects.get(pk=id)
+            serialize = StudentSerializer(stu,data=request.data,partial = True)
+            if serialize.is_valid():
+                serialize.save()
+                return Response({'data updated'})
+            return Response(serialize.errors)
+
+        def destroy(self,request,pk):
+            id = pk
+            stu = Student.objects.get(pk=id)
+            stu.delete()
+            return Response({'msg:data deleted successfully'})
+
+    In Urls we need to add our router by which we can use routing without explicitly creating it.
+urls.py
+    from django.contrib import admin
+    from django.urls import path,include
+    from api import views
+    from rest_framework.routers import DefaultRouter
+
+    router = DefaultRouter()
+    router.register('studentApi',views.StudentModelViewset,basename='student')
+
+    urlpatterns = [
+        path("admin/", admin.site.urls),
+        path('',include(router.urls))
+    ]   
+
+--------------------------------------------------------------------------------------------------------------
+
+                    ------------------> ev13 Model View set <------------------
+    
+    The Model view set class inherits from genericApiView and includes implementations for various actions,by mixing in the behaviour of the various mixin class.
+    The actions provided by the ModelViewset class are list(),retirieve(),create(),update(),partial_update() and destroy(). you can use any of the standard attributes o methods overrides provided by GenericAPIView.
+
+    from .models import Student
+    from .serializer import StudentSerializer
+    from rest_framework.viewsets import ModelViewSet
+
+    class StudentModelViewset(ModelViewSet):
+        queryset = Student.objects.all()
+        serializer_class = StudentSerializer
+
+    -------------------->only these 3 line of codes are able to create complete CRUD operations
+
+
+    ------------------------> ReadOnlyModelViewSet class <--------------------------
+
+    The readOnlyModelViewSet class also inherits from GenricAPIView. As with ModelViewSet it also include immplementations for various actions,but unlike ModelViewset only provides the 'read only' actions,list() and retrieve(). You can use any of the standard attribiutes and method overrides avalilable to GenericAPIView.
+
+views.py
+        from .models import Student
+        from .serializer import StudentSerializer
+        from rest_framework.viewsets import ModelViewSet,ReadOnlyModelViewSet
+
+        class StudentModelViewset(ModelViewSet):
+            queryset = Student.objects.all()
+            serializer_class = StudentSerializer
+
+        class StudentReadonly(ReadOnlyModelViewSet):
+            queryset = Student.objects.all()
+            serializer_class = StudentSerializer
+
+
+
+urls.py
+    from django.contrib import admin
+    from django.urls import path,include
+    from api import views
+    from rest_framework.routers import DefaultRouter
+
+    router = DefaultRouter()
+    router.register('studentApi',views.StudentModelViewset,basename='student-api')
+    router.register('Studentread',views.StudentReadonly,basename='student-read')
+
+    urlpatterns = [
+        path("admin/", admin.site.urls),
+        path('',include(router.urls))
+    ]
