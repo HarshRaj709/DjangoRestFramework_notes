@@ -1363,7 +1363,7 @@ views.py
 
 
 
-urls.py
+urls.py                                     #base name must be different if you want to use multiple routes
     from django.contrib import admin
     from django.urls import path,include
     from api import views
@@ -1377,3 +1377,76 @@ urls.py
         path("admin/", admin.site.urls),
         path('',include(router.urls))
     ]
+
+--------------------------------------------------------------------------------------------------------------
+
+
+                -------------------> ev14 Basic User Authentication <---------------------
+    
+    To make checker so that only verified user can get and edit api's data.
+
+        - Data is always associated with a creator.
+        - Only authenticated users may create Data.
+        - Only the creator of a data may update or delete it.
+        - Unauthenticated requests should have full read-ony access.
+
+    Authentication : Authentication is always run at the very start of the view,before the permission and throttling checks occur,and before any other code is allowed to proceed.
+
+    - BasicAuthentication
+    - sessionAuthentication
+    - TokenAuthentication
+    - RemoteUserAuthentication
+    - Custom Authentication
+
+            -----------------------------> Basic Authentication <--------------------------
+        
+        THis authenticaation schemes uses HTTP Basic Authentication, signed against a user's username and password.
+        Basic Authentication is generally only appropriate for tessting.
+        If successfully authenticated,BasicAuthentication provide the following credentials.
+            -request.user will be a Django User instance
+            -request.auth will be None.
+
+        unathorized responses that are denied permission will result in an HTTP 401 Unathorized response with an appropriate www-Authenticate header.
+
+Permission Classes: It is use to grant or deny access for diferent classes of users to different parts of APi.
+            request.user and request.auth to determine if the incoming request should be permitted.
+
+        - AllowAny  : ByDefault No authentication
+        - IsAuthenticated   : It will deny permission to all unauthenticated user.
+        - IsAdminUser   :   It allow only to those who are staff in application.
+        - IsAuthenticatedOrReadOnly
+        - DjangoModelPermission
+        - DjangoModelPermissionOrAnonReadOnly
+        - DjangoObjectPermission
+        - Custom Permission
+
+
+    Practical -----------------------------------------------------------------------------------------------
+
+    from .models import Student
+    from .serializer import StudentSerializer
+    from rest_framework.viewsets import ModelViewSet,ReadOnlyModelViewSet
+    from rest_framework.authentication import BasicAuthentication
+    from rest_framework.permissions import IsAuthenticated,IsAdminUser
+
+    class StudentModelViewset(ModelViewSet):
+        queryset = Student.objects.all()
+        serializer_class = StudentSerializer
+    ----authentication_classes = [BasicAuthentication]
+    ----permission_classes = [IsAdminUser]          #IsAuthenticated
+
+    class StudentReadonly(ReadOnlyModelViewSet):
+        queryset = Student.objects.all()
+        serializer_class = StudentSerializer
+
+--------------------------------------------------------------------------------------------------------------
+
+if you want to apply same authantication and permission classes to all classes then use this method instead of explicitly write authentication_classes and permission_classes
+
+
+settings.py 
+
+    REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES':['rest_framework.authentication.BasicAuthentication'],
+    'DEFAULT_PERMISSION_CLASSES':['rest_framework.permissions.IsAdminUser']
+    }
