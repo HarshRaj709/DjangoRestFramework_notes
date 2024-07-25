@@ -1398,6 +1398,56 @@ urls.py                                     #base name must be different if you 
     - RemoteUserAuthentication
     - Custom Authentication
 
+Permission Classes: It is use to grant or deny access for diferent classes of users to different parts of APi.
+            request.user and request.auth to determine if the incoming request should be permitted.
+
+    - AllowAny  : ByDefault No authentication
+    - IsAuthenticated   : It will deny permission to all unauthenticated user.
+
+    - IsAdminUser   :   It allow only to those who are staff in application.
+
+    - IsAuthenticatedOrReadOnly : In this user which is authenticated can perform any request,else only see data
+
+    - DjangoModelPermission : Only those user can change/add data on model who have permission for that. We have to give user permission to add/update/delete permission. THis allows to give different permissions to different users
+
+    - DjangoModelPermissionOrAnonReadOnly : similar to DjangoModelPermissions,but also allows unauthenticated users to have read-only access to the api.
+
+    - DjangoObjectPermission : THeoretical Conncept
+
+    - Custom Permission : for this we have to create 1 new file 'custompermission.py
+
+            custompermission.py
+                from rest_framework.permissions import BasePermission
+
+                class MyPermission(BasePermission):
+                    def has_permission(self,request,view):
+                        if request.method == 'GET':
+                            return True
+                        return False
+            
+            then add this class to your views.py
+
+                from .models import Student
+                from .serializer import StudentSerializer
+                from rest_framework.viewsets import ModelViewSet,ReadOnlyModelViewSet
+                from rest_framework.authentication import BasicAuthentication,SessionAuthentication
+                from rest_framework.permissions import IsAuthenticated,IsAdminUser,IsAuthenticatedOrReadOnly,DjangoModelPermissions,DjangoModelPermissionsOrAnonReadOnly
+                from .custompermission import MyPermission
+
+                class StudentModelViewset(ModelViewSet):
+                    queryset = Student.objects.all()
+                    serializer_class = StudentSerializer
+                    authentication_classes = [SessionAuthentication]                #this will not ask for credentials we have to add 1 line in urls.py
+                    # permission_classes = [DjangoModelPermissions]
+                    # permission_classes = [DjangoModelPermissions]
+                    # permission_classes = [DjangoModelPermissionsOrAnonReadOnly]
+                    permission_classes = [MyPermission]
+
+                class StudentReadonly(ReadOnlyModelViewSet):
+                    queryset = Student.objects.all()
+                    serializer_class = StudentSerializer
+    
+
             -----------------------------> Basic Authentication <--------------------------
         
         THis authenticaation schemes uses HTTP Basic Authentication, signed against a user's username and password.
@@ -1407,18 +1457,6 @@ urls.py                                     #base name must be different if you 
             -request.auth will be None.
 
         unathorized responses that are denied permission will result in an HTTP 401 Unathorized response with an appropriate www-Authenticate header.
-
-Permission Classes: It is use to grant or deny access for diferent classes of users to different parts of APi.
-            request.user and request.auth to determine if the incoming request should be permitted.
-
-        - AllowAny  : ByDefault No authentication
-        - IsAuthenticated   : It will deny permission to all unauthenticated user.
-        - IsAdminUser   :   It allow only to those who are staff in application.
-        - IsAuthenticatedOrReadOnly
-        - DjangoModelPermission
-        - DjangoModelPermissionOrAnonReadOnly
-        - DjangoObjectPermission
-        - Custom Permission
 
 
     Practical -----------------------------------------------------------------------------------------------
@@ -1450,3 +1488,98 @@ settings.py
     'DEFAULT_AUTHENTICATION_CLASSES':['rest_framework.authentication.BasicAuthentication'],
     'DEFAULT_PERMISSION_CLASSES':['rest_framework.permissions.IsAdminUser']
     }
+
+--------------------------------------------------------------------------------------------------------------
+
+                ---------------> ev15 SessionAuthentication <-------------------
+
+    THis authentication scheme uses Django's default session backend for authentication. Session authentication is appropriate for AJAX clients that are running in the same session context as your website.
+
+    If successfully authenticated, SessionAuthentication provides the following credentials.
+        - request.user will be user instance.
+        - request.auth will be None.
+    
+    Practical Approach:
+    views.py
+        from .models import Student
+        from .serializer import StudentSerializer
+        from rest_framework.viewsets import ModelViewSet,ReadOnlyModelViewSet
+        from rest_framework.authentication import BasicAuthentication,SessionAuthentication
+        from rest_framework.permissions import IsAuthenticated,IsAdminUser
+
+        class StudentModelViewset(ModelViewSet):
+            queryset = Student.objects.all()
+            serializer_class = StudentSerializer
+            authentication_classes = [SessionAuthentication]                #this will not ask for credentials we have to add 1 line in urls.py
+            permission_classes = [IsAdminUser]          #IsAuthenticated
+
+        class StudentReadonly(ReadOnlyModelViewSet):
+            queryset = Student.objects.all()
+            serializer_class = StudentSerializer
+
+urls.py
+        from django.contrib import admin
+        from django.urls import path,include
+        from rest_framework.routers import DefaultRouter
+        from api import views
+
+        router = DefaultRouter()
+        router.register('StudentApi',views.StudentModelViewset,basename='Student-api')
+
+        urlpatterns = [
+            path("admin/", admin.site.urls),
+            path('',include(router.urls)),
+            path('auth/',include('rest_framework.urls',namespace='rest_framework'))
+        ]
+
+--------------------------------------------------------------------------------------------------------------
+
+            ----------------> ev16 Authentication in function based Views<-----------------
+
+    same as Class Based views....
+
+    import Authenticatin class and its decorators
+
+        --from rest_framework.decorators import api_view,authentication_classes,permission_classes
+        --from rest_framework.authentication import SessionAuthentication
+        --from rest_framework.permissions import IsAuthenticated
+
+    views.py
+            from rest_framework.response import Response
+            from rest_framework.decorators import api_view,authentication_classes,permission_classes
+            from .models import Student
+            from .serializers import Studentserializers
+            from rest_framework.authentication import BasicAuthentication,SessionAuthentication
+            from rest_framework.permissions import IsAuthenticated
+
+
+            # Create your views here.
+            @api_view(['GET','POST','PUT','PATCH','DELETE'])
+            @authentication_classes([SessionAuthentication])        #add these two lines
+            @permission_classes([IsAuthenticated])                  #and this
+            def home(request,pk=None):
+                if request.method == 'GET':
+                    id = pk           #request.data.get('id')
+                    if id:
+                        stu = Student.objects.get(pk=id)
+                        serialize = Studentserializers(stu)
+                        return Response(serialize.data)
+                    else: 
+                        stu = Student.objects.all()
+                        serialize = Studentserializers(stu,many=True)
+                        return Response(serialize.data)
+
+    urls.py for SessionAuthentication Only.
+
+        from django.contrib import admin
+        from django.urls import path,include
+        from api import views
+        import rest_framework
+
+
+        urlpatterns = [
+            path("admin/", admin.site.urls),
+            path('api/',views.home,name='home'),
+            path('api/<int:pk>',views.home,name='home'),
+            path('auth/',include('rest_framework.urls',namespace='rest_framework'))
+        ]
