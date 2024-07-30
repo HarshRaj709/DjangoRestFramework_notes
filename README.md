@@ -1,4 +1,40 @@
+                                            INDEX
 
+    ev1             ---------------------           Django Serializer
+
+    ev2             ---------------------           deserialization
+
+    ev3             ---------------------      API Crud Application using simple serialization/desirialization
+
+    ev4             ---------------------           Validation / Validators
+
+    ev5             ---------------------           Modelserializer Class
+
+    ev6             ---------------------           Function Based Api View
+
+    ev7             ---------------------           CRUD OPERATION usin view_api
+
+    ev8             ---------------------           Class based Api View
+
+    ev9             ---------------------           GenericApiView
+
+    ev10            ---------------------           Combined all mixins in single class
+
+    ev11            ---------------------           Concrete View Class
+
+    ev12            ---------------------           ViewSet in DRF
+
+    ev13            ---------------------           ModelView set
+
+    ev14            ---------------------           Basic User Authentication
+
+    ev15            ---------------------           SessionAuthentication
+
+    ev16            ---------------------           Authentication in function based Views
+
+    ev17            ---------------------           TokenBased Authentication
+
+    ev18            ---------------------           Using Signals to generate Tokens
 
 -------------------------------------> Lets start with Django Rest Framework <------------------------------------
 
@@ -1107,6 +1143,7 @@ Mixin in GenericApiView
 --------------------------------------------------------------------------------------------------------------
 
             ------------------------> ev11 Concrete View Class <--------------------
+
     from rest_framework.generics import ListAPIView,CreateAPIView,RetrieveAPIView,UpdateAPIView,DestroyAPIView,ListCreateAPIView,RetrieveUpdateAPIView,RetrieveUpdateDestroyAPIView
     from .models import Student
     from .serializer import StudentSerializer
@@ -1328,7 +1365,7 @@ urls.py
 
 --------------------------------------------------------------------------------------------------------------
 
-                    ------------------> ev13 Model View set <------------------
+                    ------------------> ev13 ModelView set <------------------
     
     The Model view set class inherits from genericApiView and includes implementations for various actions,by mixing in the behaviour of the various mixin class.
     The actions provided by the ModelViewset class are list(),retirieve(),create(),update(),partial_update() and destroy(). you can use any of the standard attributes o methods overrides provided by GenericAPIView.
@@ -1529,7 +1566,7 @@ urls.py
         urlpatterns = [
             path("admin/", admin.site.urls),
             path('',include(router.urls)),
-            path('auth/',include('rest_framework.urls',namespace='rest_framework'))
+            path('auth/',include('rest_framework.urls',namespace='rest_framework'))#used to provide login link
         ]
 
 --------------------------------------------------------------------------------------------------------------
@@ -1583,3 +1620,75 @@ urls.py
             path('api/<int:pk>',views.home,name='home'),
             path('auth/',include('rest_framework.urls',namespace='rest_framework'))
         ]
+
+--------------------------------------------------------------------------------------------------------------
+
+            ------------------------> ev17 TokenBased Authentication <-----------------------
+
+    THis authentication scheme uses a simple token based HTTP Authentication scheme. Token authentication is appropriate for client-server setups, such a native desktop and mobile clients.
+
+    To use the Token uthentication scheme you'll need to congigure the authentication classes to include Token Authentication, and addittionally incude rest_framework.authtoken in your INSTALLED_APPS settings.
+
+----
+INSTALLED_APPS = [
+        'rest_framework.authtoken'              #make sure to migrate after this..
+    ] 
+
+    If authenticated succesfully it will provide request.user as User instance.
+    request.auth will be rest_framework.authtoken.models.Token instance
+
+    The http command line tool may be useful for testing token authenticated API's.
+
+--------------------------------------------------------------------------------------------------------------
+                                       
+    ----------------------------------------->Generate Tokens<---------------------------------------------
+
+    -----   Using Admin Application:
+                    when you add rest_framework.authtoken in settings.py there will be 1 option to generate 
+                    token.
+
+    -----   Using Django manage.py command:
+                    Python manage.py drf_create_token<username> - THis command willl return API token for 
+                    the given user or creates a token if token doesnt exist for user.
+
+
+    -----   By exposing an API endpoint:
+                TO use this we need to install pip install httpie
+
+                By this method user can generate the token from themselves by giving username and password.
+
+                Rest framework provide a built-in view to provide this behaviour. To use it add the obtain_auth_token view to your URLconf:
+                urls.py
+                    from rest_framework.authtoken.views import obtain_auth_token
+
+                    urlpatterns = [
+                        path('gettoken/',obtain_auth_token)
+                    ]
+
+            The obtain_auth_token view will return a JSON response when valid username and password fields are posted to the view using form data or JSON.
+
+        Write this in command prompt
+            http POST http://127.0.0.1:8000/gettoken/username="name"password="pass"
+
+
+    -----   Using Signals:
+                    By this, when user register itself the token get generated from itself.
+                                                ev18
+
+
+--------------------------------------------------------------------------------------------------------------
+
+                        --------------> ev18 <----------------
+models.py
+
+    from django.conf import settings
+    from django.db.models.signals import post_save          #after save
+    from django.dispatch import receiver
+    from rest_framework.authtoken.models import Token
+
+    @receiver(post_save,sender=settings.AUTH_USER_MODEL)
+    def create_auth_token(sender, instance = None, created=False,**kwargs):
+        if created:
+            Token.objects.create(user = instance)
+
+--------------------------------------------------------------------------------------------------------------

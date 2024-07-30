@@ -8,7 +8,7 @@ from .custompermission import MyPermission
 class StudentModelViewset(ModelViewSet):
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
-    authentication_classes = [SessionAuthentication]                #this will not ask for credentials we have to add 1 line in urls.py
+    authentication_classes = [BasicAuthentication]                #this will not ask for credentials we have to add 1 line in urls.py
     # permission_classes = [DjangoModelPermissions]
     # permission_classes = [DjangoModelPermissions]
     # permission_classes = [DjangoModelPermissionsOrAnonReadOnly]
