@@ -42,6 +42,8 @@
 
     ev21            ---------------------           Throttling
 
+    ev22            ---------------------           ScopedThrottle
+
 -------------------------------------> Lets start with Django Rest Framework <------------------------------------
 
 
