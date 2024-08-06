@@ -20,7 +20,7 @@
 
     ev10            ---------------------           Combined all mixins in single class
 
-    ev11            ---------------------           Concrete View Class
+    ev11            ---------------------           Concrete View Class (ListAPIView,CreateAPIView)
 
     ev12            ---------------------           ViewSet in DRF
 
@@ -36,6 +36,12 @@
 
     ev18            ---------------------           Using Signals to generate Tokens
 
+    ev19            ---------------------           Custom Authentication
+
+    ev20            ---------------------           Third Party Authentication:::JSON Web Token Authentication
+
+    ev21            ---------------------           Throttling
+
 -------------------------------------> Lets start with Django Rest Framework <------------------------------------
 
 
@@ -47,6 +53,16 @@ Ans.1 THe process of converting data such as querysets and model instances to na
                 ------------> Starting with installing DjangoRestFrameWork(DRF) <--------------
 
     ------> pip install djangorestframework
+
+Ques.2 How to make Authentication default for all Views methods?
+
+Ans.2 settings.py 
+
+        REST_FRAMEWORK = {
+        'DEFAULT_AUTHENTICATION_CLASSES':['rest_framework.authentication.BasicAuthentication'],
+        'DEFAULT_PERMISSION_CLASSES':['rest_framework.permissions.IsAdminUser']
+        }
+
 
 ------------------------------------------------------------------------------------------------------------------
 
@@ -1692,3 +1708,245 @@ models.py
             Token.objects.create(user = instance)
 
 --------------------------------------------------------------------------------------------------------------
+
+        -------------------------> ev19 Custom Authentication <-------------------------------------
+
+    To implement a custom authentication scheme,subclass BaseAuthentication and override the authenticate(self,request) method.
+    
+    This method should return a two tuple of (user,auth) if authentication succeeds, or None otherwise.
+
+    step 1: Create customauth.py
+
+            from rest_framework.authentication import BaseAuthentication
+            from django.contrib.auth.models import User
+            from rest_framework.exceptions import AuthenticationFailed
+
+            class CustomAuthentication(BaseAuthentication):
+                def authenticate(self,request):
+                    username = request.GET.get('username')
+                    if username is None:
+                        return None
+                    
+                    try:
+                        user = User.objects.get(username = username)
+                    except User.DoesNotExist:
+                        raise AuthenticationFailed('No such user')
+                    # Return a tuple containing the user and None for additional auth data
+                    return (user,None)
+
+    step 2: use it in views.py
+
+            from rest_framework.viewsets import ModelViewSet
+            from .models import Student
+            from .serializer import StudentSerializer
+            from api.customauth import CustomAuthentication
+            from rest_framework.permissions import IsAuthenticated
+
+            # Create your views here.
+            class StudentApi(ModelViewSet):
+                queryset = Student.objects.all()
+                serializer_class = StudentSerializer
+                authentication_classes = [CustomAuthentication]
+                permission_classes = [IsAuthenticated]
+
+    step 3: use this url to access data.
+            http://127.0.0.1:8000/StudentApi/?username=rohan
+
+--------------------------------------------------------------------------------------------------------------
+
+        ------------> ev20 Third Party Authentication:::JSON Web Token Authentication <------------
+
+    JWT is a fairly new standard which can be used for token-based authentication. Unlike the built-in TokenAuthentication scheme, JWT Autentication doesn't need to use a database to validate a token.
+
+    simple JWT:
+        pip install djangorestframework-simplejwt
+
+    Configure Simple Jwt:
+        REST_FRAMEWORK = {
+            'DEFAULT_AUTHENTICATION_CLASSES':('rest_framwork_simplejwt.authentication.JWTAuthentication')
+        }
+
+    Urls.py
+        from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
+        urlpatterns = [
+            path('gettoken/',TokenObtainPairView.as_view(),name='token_obtain_pair'),
+            path('refreshtoken/',TokenRefreshView.as_view(),name='token_refresh'),
+        ]
+
+    Verify Token:
+        Urls.py
+        from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView,TokenVerifyView
+        urlpatterns = [
+            path('gettoken/',TokenObtainPairView.as_view(),name='token_obtain_pair'),
+            path('refreshtoken/',TokenRefreshView.as_view(),name='token_refresh'),
+            path('verifytoken/',TokenVerifyView.as_view(),name='token_verify'),
+        ]
+
+
+settings.py
+            from datetime import timedelta
+            TOken Lifetime:
+                from datetime import timedelta
+                SIMPLE_JWT = {
+                    'ACCESS_TOKEN_LIFETIME':timedelta(minutes=5),       #to set lifetime
+                    'REFRESH_TOKEN_LIFETIME':timedelta(days=1),         #to get refresh token
+                    'ROTATE_REFRESH_TOKENS':True        #to get refresh token along with access token
+                }
+
+
+
+    #http http://127.0.0.1:8000/StudentApi/ 'Authorization:Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzIyOTMwNDIyLCJpYXQiOjE3MjI5MzAxMjIsImp0aSI6ImMzMjVhNzUyMTFkZTRhYzQ5YzUwNDVjNWQwZDJiZmEyIiwidXNlcl9pZCI6Mn0.gSlFeJ988T_8Ni09ILBo1N8sUMpeUCENPffjLw3mAxs'
+    # to access databse.
+
+    #http -f POST http://127.0.0.1:8000/StudentApi/ name=Raj roll=105 city=bokaro 'Authorization:Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzIyOTMwOTAzLCJpYXQiOjE3MjI5MzA2MDMsImp0aSI6ImIxYWE3M2ExM2E3NjRkZDFhNTRlOTQ2Nzk0ZTQ0NTMyIiwidXNlcl9pZCI6Mn0.etdnU4MsF1gf-ZAFZg_WjrO6JPPJ5_t73G-yXl6PTwM'
+    # to post data
+
+    #http DELETE http://127.0.0.1:8000/StudentApi/3/ 'Authorization:Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzIyOTMwOTAzLCJpYXQiOjE3MjI5MzA2MDMsImp0aSI6ImIxYWE3M2ExM2E3NjRkZDFhNTRlOTQ2Nzk0ZTQ0NTMyIiwidXNlcl9pZCI6Mn0.etdnU4MsF1gf-ZAFZg_WjrO6JPPJ5_t73G-yXl6PTwM'
+    #to delete data
+
+
+--------------------------------------------------------------------------------------------------------------
+
+                    ------------------------> ev21 Throttling <------------------------
+
+    Throttles indicate a temporary state,and are used to control the rate of requests that client can make to an API.
+    Your API might have a restrictive throttle for unauthenticated requests,and a less restrictive throttle for authenticated.
+
+    To set Globally:
+    settings.py
+
+        REST_FRAMEWORK = {
+            'DEFAULT_THROTTLE_CLASSES':[
+                'rest_framework.throttling.AnonRateThrottle',       #used for anonmous user, used IP add.
+                'rest_framework.throttling.UserRateThrottle',       #used for registered user
+            ],
+
+            'DEFAULT_THROTTLE_RATES':{
+                'anon':'100/day',
+                'user':'1000/day'       
+            }
+        }
+
+Locally:
+    Types of Throttle:
+        1.UserRateThrottle
+        2.AnonRateThrottle
+        3.ScopedRateThrottle: used to restrict specific part of API.
+
+
+        from rest_framework.authentication import SessionAuthentication
+        from rest_framework.permissions import IsAuthenticatedOrReadOnly
+        from rest_framework.viewsets import ModelViewSet
+        from .serializer import StudentSerializer
+        from .models import Student
+        from rest_framework.throttling import AnonRateThrottle,UserRateThrottle
+
+        # Create your views here.
+        class StudentApi(ModelViewSet):
+            queryset = Student.objects.all()
+            serializer_class = StudentSerializer
+            authentication_classes = [SessionAuthentication]
+            permission_classes = [IsAuthenticatedOrReadOnly]
+            throttle_classes = [AnonRateThrottle,UserRateThrottle]
+
+        
+And then add this to settings.py
+
+        REST_FRAMEWORK = {          #but if we use that then all the views class will get same throttle rate.
+            'DEFAULT_THROTTLE_RATES':{
+                'anon':'2/day',
+                'user':'5/hour',
+            }
+        }
+
+
+To solve that -----
+
+    we will inherit the UserRateThrottle class
+
+    create throttle.py
+        from rest_framework.throttling import UserRateThrottle
+
+        class JackRateThrottle(UserRateThrottle):
+            scope = 'jack'
+
+
+    views.py
+        from rest_framework.authentication import SessionAuthentication
+        from rest_framework.permissions import IsAuthenticatedOrReadOnly
+        from rest_framework.viewsets import ModelViewSet
+        from .serializer import StudentSerializer
+        from .models import Student
+        from rest_framework.throttling import AnonRateThrottle,UserRateThrottle
+        from .throttling import JackRateThrottle
+
+        # Create your views here.
+        class StudentApi(ModelViewSet):
+            queryset = Student.objects.all()
+            serializer_class = StudentSerializer
+            authentication_classes = [SessionAuthentication]
+            permission_classes = [IsAuthenticatedOrReadOnly]
+            throttle_classes = [AnonRateThrottle,JackRateThrottle]      #UserRateThrottle
+
+
+--------------------------------------------------------------------------------------------------------------
+
+                --------------------> ev22 ScopedThrottle <------------------------
+
+
+    THis help use to add throttling to only specifc parts of api.
+    for that we use generic api creation method
+
+
+    views.py
+        from rest_framework.generics import ListAPIView,CreateAPIView,RetrieveAPIView,UpdateAPIView,DestroyAPIView,ListCreateAPIView,RetrieveUpdateAPIView,RetrieveUpdateDestroyAPIView
+        from .models import Student
+        from .serializer import StudentSerializer
+        from rest_framework.throttling import ScopedRateThrottle
+
+        # Create your views here.
+        class StudentList(ListAPIView):
+            queryset = Student.objects.all()
+            serializer_class = StudentSerializer
+            throttle_scope = 'viewstu'
+            
+
+        class StudentCreate(CreateAPIView):
+            queryset = Student.objects.all()
+            serializer_class = StudentSerializer
+            
+
+        class StudentRetrieve(RetrieveAPIView):
+            queryset = Student.objects.all()
+            serializer_class = StudentSerializer
+            throttle_scope = 'viewstu'
+
+        class StudentUpdate(UpdateAPIView):
+            queryset = Student.objects.all()
+            serializer_class = StudentSerializer
+
+        class StudentDestory(DestroyAPIView):
+            queryset = Student.objects.all()
+            serializer_class = StudentSerializer
+
+        class StudentListCreate(ListCreateAPIView):
+            queryset = Student.objects.all()
+            serializer_class = StudentSerializer
+
+        class StudentRetrieveupdate(RetrieveUpdateDestroyAPIView):
+            queryset = Student.objects.all()
+            serializer_class = StudentSerializer
+
+
+    settings.py
+        REST_FRAMEWORK={
+            'DEFAULT_THROTTLE_CLASSES':[
+                'rest_framework.throttling.ScopedRateThrottle',
+            ],
+            'DEFAULT_THROTTLE_RATES':{
+                'viewstu':'2/day',
+            }
+        }
+
+
+THere classes with viewstu will work only for 2 time a day for a user.
