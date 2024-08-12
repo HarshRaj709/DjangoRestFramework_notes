@@ -1890,6 +1890,15 @@ To solve that -----
             permission_classes = [IsAuthenticatedOrReadOnly]
             throttle_classes = [AnonRateThrottle,JackRateThrottle]      #UserRateThrottle
 
+    settings.py----
+        REST_FRAMEWORK = {
+            'DEFAULT_THROTTLE_RATES':{
+                'anon':'2/day',
+                'user':'5/hour',
+                'jack':'3/minute',      #for specific class
+            }
+        }
+
 
 --------------------------------------------------------------------------------------------------------------
 
@@ -1952,3 +1961,167 @@ To solve that -----
 
 
 THere classes with viewstu will work only for 2 time a day for a user.
+
+--------------------------------------------------------------------------------------------------------------
+
+                -----------------> ev23 - Filtering through Api <--------------------
+
+    THe simplest way to filter the queryset of any view that subclasses GenericAPIView is to override the .get_queryset() method.
+
+    In this loggined user will see there data only.
+
+    PRACTICAL APPROACH:
+
+        from django.shortcuts import render
+        from .models import Student
+        from .serializer import StudentSerializer
+        from rest_framework.viewsets import ModelViewSet
+        from rest_framework.authentication import SessionAuthentication
+        from rest_framework.permissions import IsAuthenticated
+        from rest_framework.throttling import AnonRateThrottle,UserRateThrottle
+
+        # Create your views here.
+
+        class StudentApi(ModelViewSet):
+            queryset = Student.objects.all()            #filter(passby = 'jaiveer')
+            serializer_class = StudentSerializer
+            authentication_classes = [SessionAuthentication]
+            permission_classes = [IsAuthenticated]
+            throttle_classes = [UserRateThrottle]
+
+            def get_queryset(self):
+                user = self.request.user
+                return Student.objects.filter(passby=user)
+
+--------------------------------------------------------------------------------------------------------------
+
+                ----------------------->ev24 Generic Filtering <----------------------------
+
+    REST Framework also includes support for generic filtering backends that allow you to easily construct complex searches and filters.
+
+    DjangoFilterBackend: The django-filter library includes a DjangoFilterBackend class which supports highly customizabe field filtering for REST framework.
+
+            -----------------> pip install django-filter
+
+            Then add 'django_filters' to Django's INSTALLED_APPS:
+            INSTALLED_APPS = [
+                'django_filters',
+            ]
+
+To set it GLOBALLY ---------------->
+
+        settings.py
+
+            REST_FRAMEWORK = {
+                'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
+            }
+
+
+        views.py
+            from django.shortcuts import render
+            from .models import Student
+            from .serializer import StudentSerializer
+            from rest_framework.viewsets import ModelViewSet
+            from rest_framework.authentication import SessionAuthentication
+            from rest_framework.permissions import IsAuthenticated
+            from rest_framework.throttling import AnonRateThrottle,UserRateThrottle
+
+            # Create your views here.
+
+            class StudentApi(ModelViewSet):
+                queryset = Student.objects.all()            #filter(passby = 'jaiveer')
+                serializer_class = StudentSerializer
+                authentication_classes = [SessionAuthentication]
+                permission_classes = [IsAuthenticated]
+                throttle_classes = [UserRateThrottle]
+                filterset_fields = ['city','name']          #by this we get the filters option
+
+                #http://127.0.0.1:8000/StudentApi/?city=&name=meghna
+
+Per View Setting
+
+        from django.shortcuts import render
+        from .models import Student
+        from .serializer import StudentSerializer
+        from rest_framework.viewsets import ModelViewSet
+        from rest_framework.authentication import SessionAuthentication
+        from rest_framework.permissions import IsAuthenticated
+        from rest_framework.throttling import AnonRateThrottle,UserRateThrottle
+
+        from django_filters.rest_framework import DjangoFilterBackend       #import DjangoFilterBackend
+        from rest_framework.generics import ListAPIView
+        # Create your views here.
+
+        class StudentApi(ModelViewSet):
+            queryset = Student.objects.all()            #filter(passby = 'jaiveer')
+            serializer_class = StudentSerializer
+            authentication_classes = [SessionAuthentication]
+            permission_classes = [IsAuthenticated]
+            throttle_classes = [UserRateThrottle]
+            filterset_fields = ['city','name']
+
+        class StudentList(ListAPIView):         #non default filters
+            queryset = Student.objects.all()
+            serializer_class = StudentSerializer
+            filter_backends = [DjangoFilterBackend]
+            filterset_fields = ['city','name']
+
+            #http://127.0.0.1:8000/StudentApi/?city=&name=meghna
+
+--------------------------------------------------------------------------------------------------------------
+
+                            ---------------> ev25 SearchFilter <------------------
+
+
+        from rest_framework.generics import ListAPIView
+        from .serializer import Studentserializer
+        from .models import Student
+        from rest_framework.authentication import SessionAuthentication
+        from rest_framework.permissions import IsAuthenticated
+
+        from rest_framework.filters import SearchFilter                 #import search from here
+
+        # Create your views here.
+        class Studentlist(ListAPIView):
+            queryset = Student.objects.all()
+            serializer_class = Studentserializer
+            filter_backends = [SearchFilter]    
+            search_fields = ['city']                    #can search only from city.
+
+    
+
+        http://127.0.0.1:8000/?search=lucknow
+
+    
+SearchFilters:------------------------------------------------------
+
+    1. '^' : Starts-with search
+    2. '=' : Exact matches
+    3. '@' : Full text search. (currently only supported Django's PostgreSQL backends.)
+    4. '$' : Regex search.
+
+
+        from rest_framework.generics import ListAPIView
+        from .serializer import Studentserializer
+        from .models import Student
+        from rest_framework.authentication import SessionAuthentication
+        from rest_framework.permissions import IsAuthenticated
+        from django_filters.rest_framework import DjangoFilterBackend
+        from rest_framework.filters import SearchFilter
+
+        # Create your views here.
+        class Studentlist(ListAPIView):
+            queryset = Student.objects.all()
+            serializer_class = Studentserializer
+            filter_backends = [SearchFilter]
+            search_fields = ['^city']
+            # search_fields = ['=city']             # exact match
+            # search_fields = ['^city']           #starts with
+            # search_fields = ['city']
+
+WANT TO CHANGE search keyword from link do this
+    settings.py
+        REST_FRAMEWORK={
+            'SEARCH_PARAM':'q'
+        }
+
