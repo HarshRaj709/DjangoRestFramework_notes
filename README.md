@@ -2125,3 +2125,188 @@ WANT TO CHANGE search keyword from link do this
             'SEARCH_PARAM':'q'
         }
 
+--------------------------------------------------------------------------------------------------------------
+
+                    -------------------> ev26 Ordering Filter <-----------------------
+
+    THis class support simple query parameter controlled ordering of results.
+
+    http://127.0.0.1:8000/Studentapi/?ordering=name
+
+    For reverse ordering use '-' before query
+
+    http://127.0.0.1:8000/Studentapi/?ordering=-name
+
+
+Practical Approach ---------------------------------------->
+
+            from django.shortcuts import render
+            from rest_framework.authentication import SessionAuthentication
+            from rest_framework.permissions import IsAuthenticated
+            from .models import Student
+            from .serializer import StudentSerializer
+            from rest_framework.filters import OrderingFilter,SearchFilter
+            from rest_framework.viewsets import ModelViewSet
+            from rest_framework.throttling import AnonRateThrottle,UserRateThrottle
+            from rest_framework.generics import ListAPIView
+
+            # Create your views here.
+            class StudentApi(ModelViewSet):
+                queryset = Student.objects.all()
+                serializer_class = StudentSerializer
+                authentication_classes = [SessionAuthentication]
+                permission_classes = [IsAuthenticated]
+                filter_backends = [OrderingFilter,SearchFilter]
+                search_fields = ['^name','^city']
+                ordering_fields = '__all__'         #['city']       #if not mentioned then will apply to all
+
+            class Acess(ListAPIView):
+                queryset = Student.objects.all()
+                serializer_class = StudentSerializer
+                throttle_classes = [AnonRateThrottle,UserRateThrottle]
+                authentication_classes = [SessionAuthentication]
+                filter_backends = [SearchFilter]
+                search_fields = ['^name']
+
+                def get_queryset(self):
+                    user = self.request.user
+                    return Student.objects.filter(name=user)
+
+--------------------------------------------------------------------------------------------------------------
+
+                    -------------------> ev26 Pagination via Api<---------------------
+
+    Rest Framework includes support for customizable pagination styles.This allows you to modify how large results sets are split into individual pages of data.
+
+    There are mainly 3 classes of Pagination in DRF.
+
+1. PageNumberPagination     => Needs only page number => http://127.0.0.1:8000/Studentapi/?page=3
+
+2. LimitOffsetPagination
+
+3. CursorPagination
+
+                    ------------------> Pagination Global Settings <-------------------
+
+    The pagination style may be set globally, using the 
+
+            DEFAULT_PAGINATION_CLASS and PAGE_SIZE setting keys.
+
+            REST_FRAMEWORK = {
+                'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+                'PAGE_SIZE':5,
+            }
+
+                    ------------------> Page Number Pagination <------------------------
+
+<html>
+        <body>
+        <img src = 'https://github.com/HarshRaj709/DjangoRestFramework_notes/blob/main/pagination.png' width = '100%', height='50%' >
+        </body>
+</html>
+
+
+                                            Applied Globally
+
+    REST_FRAMEWORK = {
+                'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+                'PAGE_SIZE':5,
+            }
+
+
+                ---------------------->Now Apply on single Class<--------------------------
+        
+
+    http://127.0.0.1:8000/listview/?page=2   #this is our default link to get page. If we want to change page with other name we can do that by using page_query_param in our pagination.py
+
+pagination.py--------->
+    from rest_framework.pagination import PageNumberPagination
+
+    class CustomPage(PageNumberPagination):
+        page_size = 3
+        page_query_param = 'p'
+        page_size_query_param = 'records' #with help of this user can get records ---->http://127.0.0.1:8000/listview/?page=1&records=5
+        max_page_size = 4   #by this we can limit user to get records use with page_size_query_param
+        last_page_strings = 'end' #by this we can override our last keyword used to go last page
+
+
+views.py ------------>
+
+            from django.shortcuts import render
+            from rest_framework.authentication import SessionAuthentication
+            from rest_framework.permissions import IsAuthenticated
+            from .models import Student
+            from .serializer import StudentSerializer
+            from rest_framework.filters import OrderingFilter,SearchFilter
+            from rest_framework.viewsets import ModelViewSet
+            from rest_framework.throttling import AnonRateThrottle,UserRateThrottle
+            from rest_framework.generics import ListAPIView
+            from .pagination import CustomPage
+
+
+            class Acess(ListAPIView):
+                queryset = Student.objects.all()
+                serializer_class = StudentSerializer
+                authentication_classes = [SessionAuthentication]
+                filter_backends = [SearchFilter]
+                search_fields = ['^name']
+                pagination_class = CustomPage
+
+--------------------------------------------------------------------------------------------------------------
+
+                    ------------------>ev28 LimitOffsetPagination <-------------------------
+
+    THis pagination style mirrors the syntax used when looking up multiple database records. The client includes both a 'limit' and an 'offset' 1uery parameter. The limit indicates the maximum number of items to return, and is equivalent to the page_size in other styles. The Offset indicates the starting position of the query in relation to the complete set of unpaginated items.
+
+pagination.py----------->
+        from rest_framework.pagination import LimitOffsetPagination
+
+        class CustomPage(LimitOffsetPagination):
+            default_limit = 3   #by this we can define default size
+            limit_query_param = 'lallu' #by this we change default keyword limit of url
+            max_limit = 1       #Atmost data to show
+
+
+Default::::::::::::
+1. In this we are getting all records.
+    So to get only required records we can use limit ----> http://127.0.0.1:8000/listview/?limit=3
+
+2. If we want to see data after specific number we can use offset ----> 
+                                                    http://127.0.0.1:8000/listview/?limit=3&offset=3
+
+
+--------------------------------------------------------------------------------------------------------------
+
+                -------------------> ev29 CursorPagination <-------------------
+
+    Similar to other paginations but here only NEXT and PREV keys will show to move FORWARD AND BACKWARD. In this by default order is '-created'.
+
+    Used directly like previous one and encountered with error
+        'Cannot resolve keyword 'created' into field. Choices are: city, id, name, roll'
+
+        WHY THIS ERROR?
+         THis error occured because in CursorPagination it want a created field to show data according to that.
+         Solve it by using ordering
+
+    Default Url pattern = http://127.0.0.1:8000/listview/?cursor=cD1tZWdobmE%3D
+
+<html>
+        <br>
+        <body>
+        <img src = 'https://github.com/HarshRaj709/DjangoRestFramework_notes/blob/main/cursor.png' width = '100%', height='50%' >
+        </body>
+</html>
+pagination.py------------>
+    from rest_framework.pagination import CursorPagination
+
+    class CustomPage(CursorPagination):
+        page_size=3
+        ordering = 'name'
+        cursor_query_param = 'cu'
+
+
+
+    
+
+
+
