@@ -44,6 +44,20 @@
 
     ev22            ---------------------           ScopedThrottle
 
+    ev23            ---------------------           Filtering through Api
+
+    ev24            ---------------------           Generic Filtering (Django_Filter)
+
+    ev25            ---------------------           SearchFilter
+
+    ev26            ---------------------           OrderingFilter
+
+    ev27            ---------------------           Pagination via Api  (PageNumberPagination)
+
+    ev28            ---------------------           LimitOffsetPagination
+
+    ev29            ---------------------           CursorPagination
+
 -------------------------------------> Lets start with Django Rest Framework <------------------------------------
 
 
