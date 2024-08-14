@@ -58,6 +58,8 @@
 
     ev29            ---------------------           CursorPagination
 
+    ev30            ---------------------           UserRegistration Project
+
 -------------------------------------> Lets start with Django Rest Framework <------------------------------------
 
 
@@ -812,7 +814,7 @@ Type 3:
 
 ---------------------------------------------------------------------------------------------------------------
 
-                --------------> ev7 CRUD OPERATION usin view_api <---------------------
+                --------------> ev7 CRUD OPERATION using view_api <---------------------
 
     from rest_framework.response import Response
     from rest_framework.decorators import api_view
@@ -2318,9 +2320,188 @@ pagination.py------------>
         ordering = 'name'
         cursor_query_param = 'cu'
 
+--------------------------------------------------------------------------------------------------------------
+
+                    --------------> ev30 Registration using Model Viewset<-----------------
+
+Read from project directly
 
 
+--------------------------------------------------------------------------------------------------------------
+
+                    ---------------> ev31 Serializer Relations in DRF <---------------
+
+    Everything is working fine but now i want in songs page that singer details also get visible there.
+
+    for that just use related field namein songSerializer
+
+            from rest_framework import serializers
+            from .models import Singer,Songs
+
+
+            class SongsSerializer(serializers.ModelSerializer):
+                class Meta:
+                    model = Songs
+                    fields = "__all__"
+
+
+            class SingerSerializer(serializers.ModelSerializer):
+                class Meta:
+                    model = Singer
+                    fields = ['id','name','gender','song']      #song is working because we used that name as related name.
+
+1. StringRelatedField: but there is a problem that now the songs id is song but we want nameof songs for that
+            song = serializers.StringRelatedField(many=True) 
+
+        add that line in serializers.py
+            from rest_framework import serializers
+            from .models import Singer,Songs
+
+
+            class SongsSerializer(serializers.ModelSerializer):
+                class Meta:
+                    model = Songs
+                    fields = "__all__"
+
+
+            class SingerSerializer(serializers.ModelSerializer):
+                song = serializers.StringRelatedField(many=True)
+                class Meta:
+                    model = Singer
+                    fields = ['id','name','gender','song']      #song is working because we used that name as related name.
+
+
+
+
+---------------------------------------> Next
+
+2. HyperLinkedRelatedField is used to create a hyperlink by which we can reach to the song page
+
+            from rest_framework import serializers
+            from .models import Singer,Songs
+
+
+            class SongsSerializer(serializers.ModelSerializer):
+                class Meta:
+                    model = Songs
+                    fields = "__all__"
+
+
+            class SingerSerializer(serializers.ModelSerializer):
+                song = serializers.HyperlinkedRelatedField(many=True,read_only=True,view_name='Songs-detail')
+                class Meta:
+                    model = Singer
+                    fields = ['id','name','gender','song']      #song is working because we used that name as related name.
+
+------------------------------------------> next
+
+3. SlugRelatedField is useful when we want to show different thing in singer page like song's Musician and all, Basicly other than title and id which is default
+
+
+            from rest_framework import serializers
+            from .models import Singer,Songs
+
+
+            class SongsSerializer(serializers.ModelSerializer):
+                class Meta:
+                    model = Songs
+                    fields = "__all__"
+
+
+            class SingerSerializer(serializers.ModelSerializer):
+                song = serializers.SlugRelatedField(many=True,read_only=True,slug_field='Musician')
+                class Meta:
+                    model = Singer
+                    fields = ['id','name','gender','song']      #song is working because we used that name as related name.
+
+
+------------------------------------->
+4. HyperlinkedIdentityField: same as HyperlinkedRelatedField but it only provide 1st song link rather than providing all.
+
+        from rest_framework import serializers
+        from .models import Singer,Songs
+
+
+        class SongsSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = Songs
+                fields = "__all__"
+
+
+        class SingerSerializer(serializers.ModelSerializer):
+            song = serializers.HyperlinkedIdentityField(view_name='Songs-detail')
+            class Meta:
+                model = Singer
+                fields = ['id','name','gender','song']      #song is working because we used that name as related name.
+
+
+--------------------------------------------------------------------------------------------------------------
     
+                    -----------------> ev32 Nested Serializers <----------------
+
+    from rest_framework import serializers
+    from .models import Singer,Songs
+
+
+    class SongSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Songs
+            fields = ['id','title','singer','Musician']
+
+    class SingerSerializer(serializers.ModelSerializer):
+        song = SongSerializer(many=True, read_only=True)        #must use related_name only
+        class Meta:
+            model = Singer
+            fields = ['id','name','song','gender']
 
 
 
+
+<html>
+        <br>
+        <body>
+        <img src = 'https://github.com/HarshRaj709/DjangoRestFramework_notes/blob/main/nested.png' width = '100%', height='50%' >
+        </body>
+</html>
+
+--------------------------------------------------------------------------------------------------------------
+
+
+                    ----------------->DRF END -- Final Project <----------------
+
+    We created that project in our Django learning time, and we will use same project and create the CRUD api for that.
+
+    serializer.py
+        from rest_framework import serializers
+        from enroll.models import User
+
+
+        class ApiSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = User
+                fields = '__all__'
+
+
+    views.py
+            from .serializers import ApiSerializer
+            from enroll.models import User
+            from rest_framework.viewsets import ModelViewSet
+            from rest_framework.authentication import SessionAuthentication
+            from rest_framework.permissions import IsAuthenticatedOrReadOnly
+
+
+
+            class CRUDAPI(ModelViewSet):
+                queryset = User.objects.all()
+                serializer_class = ApiSerializer
+                authentication_classes = [SessionAuthentication]
+                permission_classes = [IsAuthenticatedOrReadOnly]
+
+    Api link for Crud Operations - http://127.0.0.1:8000/api/crud/
+    That link is okay for development purpose but we not let other user to access our api's to anonymous user after depolyment.
+
+    For that use that in settings.py
+
+        REST_FRAMEWORK = {
+            'DEFAULT_RENDERER_CLASSES':('rest_framework.renderers.JSONRenderer',)
+        }
