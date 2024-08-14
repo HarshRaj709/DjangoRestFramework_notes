@@ -60,6 +60,12 @@
 
     ev30            ---------------------           UserRegistration Project
 
+    ev31            ---------------------           Serializer Relations in DRF
+
+    ev32            ---------------------           Nested Serializers
+
+                        ------------------- Final Crud Project  -----------------
+
 -------------------------------------> Lets start with Django Rest Framework <------------------------------------
 
 
